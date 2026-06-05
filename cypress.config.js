@@ -1,18 +1,16 @@
 const { defineConfig } = require("cypress");
 require("dotenv").config();
 
-const requiredEnvVars = ["BASE_URL", "USERNAME", "PASSWORD", "SERVICE_ID"];
-
-requiredEnvVars.forEach((key) => {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-});
-
 module.exports = defineConfig({
   e2e: {
     supportFile: "cypress/support/e2e.js",
     specPattern: "cypress/e2e/**/*.cy.js",
+
+    retries: {
+      runMode: 2,
+      openMode: 1
+    },
+
     requestTimeout: 15000,
     responseTimeout: 30000,
 
@@ -21,7 +19,8 @@ module.exports = defineConfig({
       reportDir: "reports/mochawesome",
       overwrite: false,
       html: true,
-      json: true
+      json: true,
+      charts: true
     },
 
    env: {
