@@ -7,6 +7,18 @@ import { userInfoSchema } from "../../schemas/userSchemas";
 import { TransactionAssertions } from "../../support/assertions/transactionAssertions";
 import { UserAssertions } from "../../support/assertions/userAssertions";
 
+
+// Add helper here
+const getCurrencyClip = (wallet, currency) => {
+  if (!wallet || !Array.isArray(wallet.currencyClips)) {
+    return undefined;
+  }
+
+  return wallet.currencyClips.find(
+    (clip) => clip.currency === currency
+  );
+};
+
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
   let token;
   let walletId;
@@ -164,6 +176,41 @@ before(() => {
       });
     });
   });
+
+  it("[business] should increase balance after approved credit transaction", () => {
+  const payload = {
+    currency: "EUR",
+    amount: 50,
+    type: "credit",
+  };
+
+  WalletApi.getWallet(walletId, token).then((beforeWallet) => {
+    expect(beforeWallet.status).to.eq(200);
+
+    const beforeClip = getCurrencyClip(beforeWallet.body, payload.currency);
+    const beforeBalance = beforeClip ? beforeClip.balance : 0;
+
+    WalletApi.createTransaction(walletId, token, payload).then((transactionResponse) => {
+      TransactionAssertions.validateTransactionResponse(transactionResponse, payload);
+
+      if (
+        transactionResponse.body.status === "finished" &&
+        transactionResponse.body.outcome === "approved"
+      ) {
+        WalletApi.getWallet(walletId, token).then((afterWallet) => {
+          expect(afterWallet.status).to.eq(200);
+
+          const afterClip = getCurrencyClip(afterWallet.body, payload.currency);
+
+          expect(afterClip).to.exist;
+          expect(afterClip.balance).to.eq(beforeBalance + payload.amount);
+          expect(afterClip.transactionCount).to.be.greaterThan(0);
+          expect(afterClip.lastTransaction).to.exist;
+        });
+      }
+    });
+  });
+});
 
   it("[business-rule] should reject debit greater than available balance", () => {
     cy.fixture("transactionData").then((data) => {

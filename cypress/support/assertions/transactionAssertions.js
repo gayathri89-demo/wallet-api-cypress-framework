@@ -24,4 +24,22 @@ export class TransactionAssertions {
     expect(response.status).to.be.oneOf([400, 409, 422]);
     expect(response.body).to.exist;
   }
+
+  static validateTransactionResponse(response, expectedPayload) {
+    expect(response.status).to.be.oneOf([200, 201, 202]);
+
+    expect(response.body.transactionId).to.exist;
+    expect(response.body.status).to.be.oneOf(["pending", "finished"]);
+    expect(response.body.createdAt).to.exist;
+
+    if (response.body.status === "pending") {
+      return;
+    }
+
+    expect(response.body.outcome).to.be.oneOf(["approved", "denied"]);
+    expect(response.body.currency).to.eq(expectedPayload.currency);
+    expect(response.body.amount).to.eq(expectedPayload.amount);
+    expect(response.body.type).to.eq(expectedPayload.type);
+    expect(response.body.updatedAt).to.exist;
+  }
 }

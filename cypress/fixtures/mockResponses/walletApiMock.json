@@ -29,5 +29,19 @@
   },
   "insufficientBalanceResponse": {
     "message": "Insufficient balance"
+  },
+   "walletResponse": {
+    "walletId": "mock-wallet-id",
+    "currencyClips": [
+      {
+        "currency": "EUR",
+        "balance": 100,
+        "lastTransaction": "2024-11-15T05:30:00Z",
+        "transactionCount": 1
+      }
+    ],
+    "createdAt": "2024-11-01T00:00:00Z",
+    "updatedAt": "2024-11-15T05:30:00Z"
   }
+
 }
