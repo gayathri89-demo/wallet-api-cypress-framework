@@ -1,0 +1,33 @@
+{
+  "loginSuccess": {
+    "token": "mock-access-token",
+    "userId": "123e4567-e89b-12d3-a456-426614174001"
+  },
+  "userInfo": {
+    "walletId": "123e4567-e89b-12d3-a456-426614174000"
+  },
+  "transactionSuccess": {
+    "transactionId": "123e4567-e89b-12d3-a456-426614174010",
+    "currency": "EUR",
+    "amount": 100.5,
+    "type": "credit",
+    "status": "finished",
+    "outcome": "approved",
+    "createdAt": "2024-11-15T05:30:00Z",
+    "updatedAt": "2024-11-15T05:45:00Z"
+  },
+  "pendingTransaction": {
+    "transactionId": "123e4567-e89b-12d3-a456-426614174011",
+    "status": "pending",
+    "createdAt": "2024-11-15T05:30:00Z"
+  },
+  "errorResponse": {
+    "message": "Invalid transaction request"
+  },
+  "unauthorizedResponse": {
+    "message": "Unauthorized"
+  },
+  "insufficientBalanceResponse": {
+    "message": "Insufficient balance"
+  }
+}

@@ -24,11 +24,12 @@ module.exports = defineConfig({
       json: true
     },
 
-    env: {
-      apiBaseUrl: process.env.BASE_URL,
-      username: process.env.USERNAME,
-      password: process.env.PASSWORD,
-      serviceId: process.env.SERVICE_ID
-    }
+   env: {
+  apiBaseUrl: process.env.BASE_URL,
+  username: process.env.USERNAME,
+  password: process.env.PASSWORD,
+  serviceId: process.env.SERVICE_ID,
+  useMocks: process.env.USE_MOCKS === "true"
+}
   }
 });
