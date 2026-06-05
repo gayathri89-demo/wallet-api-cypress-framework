@@ -11,6 +11,9 @@ module.exports = defineConfig({
       openMode: 1
     },
 
+    screenshotOnRunFailure: true,
+    video: false,
+    defaultCommandTimeout: 10000,
     requestTimeout: 15000,
     responseTimeout: 30000,
 
@@ -23,12 +26,13 @@ module.exports = defineConfig({
       charts: true
     },
 
-   env: {
+  env: {
   apiBaseUrl: process.env.BASE_URL,
   username: process.env.USERNAME,
   password: process.env.PASSWORD,
   serviceId: process.env.SERVICE_ID,
   useMocks: process.env.USE_MOCKS === "true"
-}
+},
+
   }
 });
