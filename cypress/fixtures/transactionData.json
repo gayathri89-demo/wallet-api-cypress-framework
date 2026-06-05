@@ -42,5 +42,22 @@
     "currency": "EUR",
     "amount": 999999,
     "type": "debit"
-  }
+  },
+   "supportedCurrencies": [
+    {
+      "currency": "EUR",
+      "amount": 100,
+      "type": "credit"
+    },
+    {
+      "currency": "USD",
+      "amount": 100,
+      "type": "credit"
+    },
+    {
+      "currency": "AED",
+      "amount": 100,
+      "type": "credit"
+    }
+  ]
 }

@@ -31,19 +31,56 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       });
   });
 
-  it("[positive] should create a valid credit transaction", () => {
-    cy.fixture("transactionData").then((data) => {
-      WalletApi.createTransaction(walletId, token, data.creditEUR).then((response) => {
-        expect(response.status).to.be.oneOf([200, 201, 202]);
-        cy.validateSchema(transactionSchema, response.body);
+ context("Multi-currency wallet transactions", () => {
+    it("[positive] should create valid EUR credit transaction", () => {
+      cy.fixture("transactionData").then((data) => {
+        const transaction = data.supportedCurrencies.find((item) => item.currency === "EUR");
 
-        expect(response.body.transactionId).to.exist;
-        expect(response.body.type).to.eq(data.creditEUR.type);
-        expect(response.body.amount).to.eq(data.creditEUR.amount);
-        expect(response.body.currency).to.eq(data.creditEUR.currency);
+        WalletApi.createTransaction(walletId, token, transaction).then((response) => {
+          expect(response.status).to.be.oneOf([200, 201, 202]);
+          cy.validateSchema(transactionSchema, response.body);
+
+          expect(response.body.transactionId).to.exist;
+          expect(response.body.currency).to.eq(transaction.currency);
+          expect(response.body.amount).to.eq(transaction.amount);
+          expect(response.body.type).to.eq(transaction.type);
+        });
       });
     });
-  });
+
+    it("[positive] should create valid USD credit transaction", () => {
+      cy.fixture("transactionData").then((data) => {
+        const transaction = data.supportedCurrencies.find((item) => item.currency === "USD");
+
+        WalletApi.createTransaction(walletId, token, transaction).then((response) => {
+          expect(response.status).to.be.oneOf([200, 201, 202]);
+          cy.validateSchema(transactionSchema, response.body);
+
+          expect(response.body.transactionId).to.exist;
+          expect(response.body.currency).to.eq(transaction.currency);
+          expect(response.body.amount).to.eq(transaction.amount);
+          expect(response.body.type).to.eq(transaction.type);
+        });
+      });
+    });
+
+    it("[positive] should create valid AED credit transaction", () => {
+      cy.fixture("transactionData").then((data) => {
+        const transaction = data.supportedCurrencies.find((item) => item.currency === "AED");
+
+        WalletApi.createTransaction(walletId, token, transaction).then((response) => {
+          expect(response.status).to.be.oneOf([200, 201, 202]);
+          cy.validateSchema(transactionSchema, response.body);
+
+          expect(response.body.transactionId).to.exist;
+          expect(response.body.currency).to.eq(transaction.currency);
+          expect(response.body.amount).to.eq(transaction.amount);
+          expect(response.body.type).to.eq(transaction.type);
+        });
+      });
+    });
+    });
+
 
   it("[positive] should create a valid debit transaction", () => {
     cy.fixture("transactionData").then((data) => {
