@@ -212,6 +212,69 @@ before(() => {
   });
 });
 
+it("[business] should decrease balance after approved debit transaction", () => {
+  const creditPayload = {
+    currency: "EUR",
+    amount: 100,
+    type: "credit",
+  };
+
+  const debitPayload = {
+    currency: "EUR",
+    amount: 20,
+    type: "debit",
+  };
+
+  WalletApi.createTransaction(walletId, token, creditPayload).then((creditResponse) => {
+    TransactionAssertions.validateTransactionResponse(creditResponse, creditPayload);
+
+    WalletApi.getWallet(walletId, token).then((beforeWallet) => {
+      expect(beforeWallet.status).to.eq(200);
+
+      const beforeClip = getCurrencyClip(beforeWallet.body, debitPayload.currency);
+      const beforeBalance = beforeClip ? beforeClip.balance : 0;
+
+      WalletApi.createTransaction(walletId, token, debitPayload).then((debitResponse) => {
+        TransactionAssertions.validateTransactionResponse(debitResponse, debitPayload);
+
+        if (
+          debitResponse.body.status === "finished" &&
+          debitResponse.body.outcome === "approved"
+        ) {
+          WalletApi.getWallet(walletId, token).then((afterWallet) => {
+            expect(afterWallet.status).to.eq(200);
+
+            const afterClip = getCurrencyClip(afterWallet.body, debitPayload.currency);
+
+            expect(afterClip).to.exist;
+            expect(afterClip.balance).to.eq(beforeBalance - debitPayload.amount);
+          });
+        }
+      });
+    });
+  });
+});
+
+it("[positive] should retrieve transaction by transaction ID", () => {
+  const payload = {
+    currency: "USD",
+    amount: 25,
+    type: "credit",
+  };
+
+  WalletApi.createTransaction(walletId, token, payload).then((createResponse) => {
+    TransactionAssertions.validateTransactionResponse(createResponse, payload);
+
+    const transactionId = createResponse.body.transactionId;
+
+    WalletApi.getTransaction(walletId, transactionId, token).then((getResponse) => {
+      expect(getResponse.status).to.eq(200);
+      expect(getResponse.body.transactionId).to.eq(transactionId);
+      expect(getResponse.body.status).to.be.oneOf(["pending", "finished"]);
+    });
+  });
+});
+
   it("[business-rule] should reject debit greater than available balance", () => {
     cy.fixture("transactionData").then((data) => {
       WalletApi.createTransaction(walletId, token, data.largeDebitEUR).then((response) => {
