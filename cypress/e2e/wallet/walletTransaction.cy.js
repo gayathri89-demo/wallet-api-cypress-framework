@@ -3,6 +3,7 @@ import { UserApi } from "../../support/api/userApi";
 import { WalletApi } from "../../support/api/walletApi";
 import { transactionSchema } from "../../schemas/walletSchemas";
 import { userTokenResponseSchema } from "../../schemas/userSchemas";
+import { userInfoSchema } from "../../schemas/userSchemas";
 import { TransactionAssertions } from "../../support/assertions/transactionAssertions";
 
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
