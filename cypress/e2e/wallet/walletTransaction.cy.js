@@ -5,34 +5,41 @@ import { transactionSchema } from "../../schemas/walletSchemas";
 import { userTokenResponseSchema } from "../../schemas/userSchemas";
 import { userInfoSchema } from "../../schemas/userSchemas";
 import { TransactionAssertions } from "../../support/assertions/transactionAssertions";
+import { UserAssertions } from "../../support/assertions/userAssertions";
 
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
   let token;
   let walletId;
 
-  before(() => {
-    const credentials = {
-      username: Cypress.env("username"),
-      password: Cypress.env("password")
-    };
+before(() => {
+  const credentials = {
+    username: Cypress.env("username"),
+    password: Cypress.env("password")
+  };
 
-    AuthApi.login(credentials)
-      .then((loginResponse) => {
-        expect(loginResponse.status).to.be.oneOf([200, 201]);
-        expect(loginResponse.body.token).to.exist;
-        expect(loginResponse.body.userId).to.exist;
-        cy.validateSchema(userTokenResponseSchema, loginResponse.body);
-        token = loginResponse.body.token;
+  AuthApi.login(credentials)
+    .then((loginResponse) => {
+      UserAssertions.validateLoginResponse(
+        loginResponse,
+        userTokenResponseSchema
+      );
 
-        return UserApi.getUserInfo(loginResponse.body.userId, token);
-      })
-      .then((userResponse) => {
-        expect(userResponse.status).to.eq(200);
-        expect(userResponse.body.walletId).to.exist;
-        cy.validateSchema(userInfoSchema, userResponse.body);
-        walletId = userResponse.body.walletId;
-      });
-  });
+      token = loginResponse.body.token;
+
+      return UserApi.getUserInfo(
+        loginResponse.body.userId,
+        token
+      );
+    })
+    .then((userResponse) => {
+      UserAssertions.validateUserInfoResponse(
+        userResponse,
+        userInfoSchema
+      );
+
+      walletId = userResponse.body.walletId;
+    });
+});
 
   context("Multi-currency wallet transactions", () => {
     it("[positive] should create valid EUR credit transaction", () => {
