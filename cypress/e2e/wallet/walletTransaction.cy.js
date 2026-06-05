@@ -2,6 +2,7 @@ import { AuthApi } from "../../support/api/authApi";
 import { UserApi } from "../../support/api/userApi";
 import { WalletApi } from "../../support/api/walletApi";
 import { transactionSchema } from "../../schemas/walletSchemas";
+import { userTokenResponseSchema } from "../../schemas/userSchemas";
 import { TransactionAssertions } from "../../support/assertions/transactionAssertions";
 
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
@@ -19,7 +20,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
         expect(loginResponse.status).to.be.oneOf([200, 201]);
         expect(loginResponse.body.token).to.exist;
         expect(loginResponse.body.userId).to.exist;
-
+        cy.validateSchema(userTokenResponseSchema, loginResponse.body);
         token = loginResponse.body.token;
 
         return UserApi.getUserInfo(loginResponse.body.userId, token);
@@ -27,7 +28,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       .then((userResponse) => {
         expect(userResponse.status).to.eq(200);
         expect(userResponse.body.walletId).to.exist;
-
+        cy.validateSchema(userInfoSchema, userResponse.body);
         walletId = userResponse.body.walletId;
       });
   });
