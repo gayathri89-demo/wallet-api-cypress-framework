@@ -1,0 +1,46 @@
+{
+  "creditEUR": {
+    "currency": "EUR",
+    "amount": 100.5,
+    "type": "credit"
+  },
+  "debitEUR": {
+    "currency": "EUR",
+    "amount": 25,
+    "type": "debit"
+  },
+  "decimalCredit": {
+    "currency": "EUR",
+    "amount": 10.75,
+    "type": "credit"
+  },
+  "negativeAmount": {
+    "currency": "EUR",
+    "amount": -10,
+    "type": "credit"
+  },
+  "zeroAmount": {
+    "currency": "EUR",
+    "amount": 0,
+    "type": "credit"
+  },
+  "missingAmount": {
+    "currency": "EUR",
+    "type": "credit"
+  },
+  "unsupportedCurrency": {
+    "currency": "XYZ",
+    "amount": 100,
+    "type": "credit"
+  },
+  "invalidType": {
+    "currency": "EUR",
+    "amount": 100,
+    "type": "transfer"
+  },
+  "largeDebitEUR": {
+    "currency": "EUR",
+    "amount": 999999,
+    "type": "debit"
+  }
+}
