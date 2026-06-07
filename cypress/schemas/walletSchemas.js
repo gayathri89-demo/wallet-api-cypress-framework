@@ -1,17 +1,17 @@
 export const transactionSchema = {
   type: "object",
-  required: ["transactionId", "status"],
+  required: ["transactionId", "status", "createdAt"],
   properties: {
     transactionId: { type: "string" },
-    currency: { type: "string" },
+    currency: { type: "string", minLength: 3, maxLength: 3 },
     amount: { type: "number" },
     type: { type: "string", enum: ["credit", "debit"] },
-    status: { type: "string" },
-    outcome: { type: "string" },
+    status: { type: "string", enum: ["pending", "finished"] },
+    outcome: { type: "string", enum: ["approved", "denied"] },
     createdAt: { type: "string" },
-    updatedAt: { type: "string" }
+    updatedAt: { type: "string" },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const currencyClipSchema = {

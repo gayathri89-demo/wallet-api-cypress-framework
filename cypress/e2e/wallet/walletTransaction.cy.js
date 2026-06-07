@@ -21,6 +21,33 @@ const getCurrencyClip = (wallet, currency) => {
   return wallet.currencyClips.find((clip) => clip.currency === currency);
 };
 
+const getCurrencyClips = (wallet, currency) => {
+  if (!wallet || !Array.isArray(wallet.currencyClips)) {
+    return [];
+  }
+
+  return wallet.currencyClips.filter((clip) => clip.currency === currency);
+};
+
+const getClipBalance = (wallet, currency) => {
+  return getCurrencyClip(wallet, currency)?.balance || 0;
+};
+
+const validateTransactionState = (response) => {
+  expect(response.body.transactionId).to.exist;
+  expect(response.body.createdAt).to.exist;
+  expect(response.body.status).to.be.oneOf(["pending", "finished"]);
+
+  if (response.body.status === "pending") {
+    expect(response.body.outcome).to.not.exist;
+  }
+
+  if (response.body.status === "finished") {
+    expect(response.body.outcome).to.be.oneOf(["approved", "denied"]);
+    expect(response.body.updatedAt).to.exist;
+  }
+};
+
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
   let token;
   let walletId;
@@ -75,6 +102,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
               transaction,
               transactionSchema
             );
+            validateTransactionState(response);
           }
         );
       });
@@ -91,6 +119,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
           transactionData.decimalCredit,
           transactionSchema
         );
+        validateTransactionState(response);
       });
     });
 
@@ -99,7 +128,12 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
         walletId,
         token,
         transactionData.creditEUR
-      ).then(() => {
+      ).then((creditResponse) => {
+        TransactionAssertions.validateTransactionResponse(
+          creditResponse,
+          transactionData.creditEUR
+        );
+
         WalletApi.createTransaction(
           walletId,
           token,
@@ -110,7 +144,17 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
             transactionData.debitEUR,
             transactionSchema
           );
+          validateTransactionState(response);
         });
+      });
+    });
+
+    it("[async] should return valid pending or finished transaction status", () => {
+      const payload = transactionData.creditEUR;
+
+      WalletApi.createTransaction(walletId, token, payload).then((response) => {
+        TransactionAssertions.validateTransactionResponse(response, payload);
+        validateTransactionState(response);
       });
     });
   });
@@ -123,8 +167,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
         TransactionAssertions.validateOkResponse(beforeWallet);
         cy.validateSchema(walletSchema, beforeWallet.body);
 
-        const beforeBalance =
-          getCurrencyClip(beforeWallet.body, payload.currency)?.balance || 0;
+        const beforeBalance = getClipBalance(beforeWallet.body, payload.currency);
 
         WalletApi.createTransaction(walletId, token, payload).then(
           (transactionResponse) => {
@@ -133,25 +176,45 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
               payload
             );
 
-            if (
-              transactionResponse.body.status === "finished" &&
-              transactionResponse.body.outcome === "approved"
-            ) {
-              WalletApi.getWallet(walletId, token).then((afterWallet) => {
-                TransactionAssertions.validateOkResponse(afterWallet);
-                cy.validateSchema(walletSchema, afterWallet.body);
+            validateTransactionState(transactionResponse);
 
-                const afterClip = getCurrencyClip(
-                  afterWallet.body,
-                  payload.currency
-                );
+            WalletApi.getWallet(walletId, token).then((afterWallet) => {
+              TransactionAssertions.validateOkResponse(afterWallet);
+              cy.validateSchema(walletSchema, afterWallet.body);
 
+              const afterBalance = getClipBalance(
+                afterWallet.body,
+                payload.currency
+              );
+
+              const afterClip = getCurrencyClip(
+                afterWallet.body,
+                payload.currency
+              );
+
+              if (
+                transactionResponse.body.status === "finished" &&
+                transactionResponse.body.outcome === "approved"
+              ) {
                 expect(afterClip).to.exist;
-                expect(afterClip.balance).to.eq(beforeBalance + payload.amount);
+                expect(afterBalance).to.eq(beforeBalance + payload.amount);
                 expect(afterClip.transactionCount).to.be.greaterThan(0);
                 expect(afterClip.lastTransaction).to.exist;
-              });
-            }
+              }
+
+              if (
+                transactionResponse.body.status === "finished" &&
+                transactionResponse.body.outcome === "denied"
+              ) {
+                expect(afterBalance).to.eq(beforeBalance);
+              }
+
+              if (transactionResponse.body.status === "pending") {
+                cy.log(
+                  "Transaction is pending. Balance update will be validated after processing."
+                );
+              }
+            });
           }
         );
       });
@@ -169,12 +232,13 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
           );
 
           WalletApi.getWallet(walletId, token).then((beforeWallet) => {
-            expect(beforeWallet.status).to.eq(200);
+            TransactionAssertions.validateOkResponse(beforeWallet);
             cy.validateSchema(walletSchema, beforeWallet.body);
 
-            const beforeBalance =
-              getCurrencyClip(beforeWallet.body, debitPayload.currency)
-                ?.balance || 0;
+            const beforeBalance = getClipBalance(
+              beforeWallet.body,
+              debitPayload.currency
+            );
 
             WalletApi.createTransaction(walletId, token, debitPayload).then(
               (debitResponse) => {
@@ -183,25 +247,46 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
                   debitPayload
                 );
 
-                if (
-                  debitResponse.body.status === "finished" &&
-                  debitResponse.body.outcome === "approved"
-                ) {
-                  WalletApi.getWallet(walletId, token).then((afterWallet) => {
-                    expect(afterWallet.status).to.eq(200);
-                    cy.validateSchema(walletSchema, afterWallet.body);
+                validateTransactionState(debitResponse);
 
-                    const afterClip = getCurrencyClip(
-                      afterWallet.body,
-                      debitPayload.currency
-                    );
+                WalletApi.getWallet(walletId, token).then((afterWallet) => {
+                  TransactionAssertions.validateOkResponse(afterWallet);
+                  cy.validateSchema(walletSchema, afterWallet.body);
 
+                  const afterBalance = getClipBalance(
+                    afterWallet.body,
+                    debitPayload.currency
+                  );
+
+                  const afterClip = getCurrencyClip(
+                    afterWallet.body,
+                    debitPayload.currency
+                  );
+
+                  if (
+                    debitResponse.body.status === "finished" &&
+                    debitResponse.body.outcome === "approved"
+                  ) {
                     expect(afterClip).to.exist;
-                    expect(afterClip.balance).to.eq(
+                    expect(afterBalance).to.eq(
                       beforeBalance - debitPayload.amount
                     );
-                  });
-                }
+                    expect(afterBalance).to.be.at.least(0);
+                  }
+
+                  if (
+                    debitResponse.body.status === "finished" &&
+                    debitResponse.body.outcome === "denied"
+                  ) {
+                    expect(afterBalance).to.eq(beforeBalance);
+                  }
+
+                  if (debitResponse.body.status === "pending") {
+                    cy.log(
+                      "Debit transaction is pending. Balance update will be validated after processing."
+                    );
+                  }
+                });
               }
             );
           });
@@ -221,6 +306,8 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
             payload
           );
 
+          validateTransactionState(createResponse);
+
           const transactionId = createResponse.body.transactionId;
 
           WalletApi.getTransaction(walletId, transactionId, token).then(
@@ -229,10 +316,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
               cy.validateSchema(transactionSchema, response.body);
 
               expect(response.body.transactionId).to.eq(transactionId);
-              expect(response.body.status).to.be.oneOf([
-                "pending",
-                "finished",
-              ]);
+              validateTransactionState(response);
             }
           );
         }
@@ -248,6 +332,8 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
             createResponse,
             payload
           );
+
+          validateTransactionState(createResponse);
 
           const transactionId = createResponse.body.transactionId;
 
@@ -298,6 +384,45 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       ).then((response) => {
         TransactionAssertions.validateInsufficientBalance(response);
       });
+    });
+
+    it("[business-rule] should not create duplicate currency clips for the same currency", () => {
+      const payload = transactionData.creditEUR;
+
+      WalletApi.createTransaction(walletId, token, payload).then(
+        (firstResponse) => {
+          TransactionAssertions.validateTransactionResponse(
+            firstResponse,
+            payload
+          );
+
+          WalletApi.createTransaction(walletId, token, payload).then(
+            (secondResponse) => {
+              TransactionAssertions.validateTransactionResponse(
+                secondResponse,
+                payload
+              );
+
+              WalletApi.getWallet(walletId, token).then((walletResponse) => {
+                TransactionAssertions.validateOkResponse(walletResponse);
+                cy.validateSchema(walletSchema, walletResponse.body);
+
+                const clips = getCurrencyClips(
+                  walletResponse.body,
+                  payload.currency
+                );
+
+                expect(clips.length).to.be.at.most(1);
+
+                if (clips.length === 1) {
+                  expect(clips[0].currency).to.eq(payload.currency);
+                  expect(clips[0].balance).to.be.at.least(0);
+                }
+              });
+            }
+          );
+        }
+      );
     });
   });
 });

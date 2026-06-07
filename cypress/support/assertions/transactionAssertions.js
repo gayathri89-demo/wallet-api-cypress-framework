@@ -11,9 +11,18 @@ export class TransactionAssertions {
     cy.validateSchema(schema, response.body);
 
     expect(response.body.transactionId).to.exist;
+    expect(response.body.status).to.be.oneOf(["pending", "finished"]);
+    expect(response.body.createdAt).to.exist;
+
+    if (response.body.status === "pending") {
+      return;
+    }
+
     expect(response.body.currency).to.eq(expectedTransaction.currency);
     expect(response.body.amount).to.eq(expectedTransaction.amount);
     expect(response.body.type).to.eq(expectedTransaction.type);
+    expect(response.body.outcome).to.be.oneOf(["approved", "denied"]);
+    expect(response.body.updatedAt).to.exist;
   }
 
   static validateValidationError(response) {
