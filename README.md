@@ -83,20 +83,104 @@ Although the challenge focuses primarily on transaction processing, the framewor
 
 ## Project Structure
 
-[preserve your existing Project Structure section]
-
+wallet-api-cypress-framework/
+├── .github/
+│   └── workflows/
+│       └── api-test.yml
+│
+├── cypress/
+│   ├── e2e/
+│   │   └── wallet/
+│   │       └── walletTransaction.cy.js
+│   │
+│   ├── fixtures/
+│   │   ├── transactionData.json
+│   │   └── mockResponses/
+│   │       └── walletApiMock.json
+│   │
+│   ├── schemas/
+│   │   ├── userSchemas.js
+│   │   └── walletSchemas.js
+│   │
+│   └── support/
+│       ├── api/
+│       │   ├── authApi.js
+│       │   ├── userApi.js
+│       │   └── walletApi.js
+│       │
+│       ├── assertions/
+│       │   ├── transactionAssertions.js
+│       │   └── userAssertions.js
+│       │
+│       ├── constants/
+│       │   └── httpStatus.js
+│       │
+│       ├── commands.js
+│       └── e2e.js
+│
+├── cypress.config.js
+├── package.json
+├── README.md
+└── TESTPLAN.md
 ---
 
 ## Framework Architecture
 
-[preserve your existing Architecture Diagram]
+The framework uses a clean layered structure. Each layer has a separate responsibility.
 
----
-
-## Test Execution Flow
-
-[preserve your existing Execution Flow Diagram]
-
+┌──────────────────────────────────────────────┐
+│                 Test Spec Layer              │
+│                                              │
+│ cypress/e2e/wallet/walletTransaction.cy.js   │
+│ - Defines test scenarios                     │
+│ - Calls API clients                          │
+│ - Uses assertion helpers                     │
+│ - Uses schemas for contract validation       │
+└───────────────────────────┬──────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────┐
+│                   API Layer                  │
+│                                              │
+│ support/api/authApi.js                       │
+│ support/api/userApi.js                       │
+│ support/api/walletApi.js                     │
+│                                              │
+│ - Wraps cy.request()                         │
+│ - Handles endpoint URLs                      │
+│ - Handles headers and tokens                 │
+│ - Supports mock and real API execution       │
+└───────────────────────────┬──────────────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ Assertion Layer  │ │ Schema Layer     │ │ Fixture Layer    │
+│                  │ │                  │ │                  │
+│ UserAssertions   │ │ userSchemas.js   │ │ transactionData  │
+│ TxAssertions     │ │ walletSchemas.js │ │ mockResponses    │
+│                  │ │                  │ │                  │
+│ - Status checks  │ │ - AJV contracts  │ │ - Test payloads  │
+│ - Body checks    │ │ - Response shape │ │ - Mock objects   │
+│ - Business rules │ │ - Required data  │ │ - Reusable data  │
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+              │             │             │
+              └─────────────┼─────────────┘
+                            ▼
+┌──────────────────────────────────────────────┐
+│          Environment and Configuration       │
+│                                              │
+│ .env                                         │
+│ .env.example                                 │
+│ cypress.config.js                            │
+│ Cypress.env()                                │
+│                                              │
+│ - BASE_URL                                   │
+│ - USERNAME                                   │
+│ - PASSWORD                                   │
+│ - SERVICE_ID                                 │
+│ - USE_MOCKS                                  │
+└──────────────────────────────────────────────┘
 ---
 
 ## Test Approach
