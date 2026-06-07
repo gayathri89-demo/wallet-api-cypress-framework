@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BASE_URL: https://challenge.test.local/challenge/api/v1
-      USERNAME: test-user
-      PASSWORD: test-password
-      SERVICE_ID: wallet-service
+      BASE_URL: ${{ secrets.BASE_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      SERVICE_ID: ${{ secrets.SERVICE_ID }}
       USE_MOCKS: "true"
 
     steps:
