@@ -6,19 +6,15 @@ The objective of this test plan is to validate the core Wallet API transaction f
 
 The primary endpoint under test is:
 
-```http
 POST /wallet/{walletId}/transaction
-```
 
-Supporting endpoints are used for setup and verification:
+Supporting endpoints are used only for test setup and validation:
 
-```http
 POST /user/login
-GET /user/{userId}
+GET /user/info/{userId}
 GET /wallet/{walletId}
 GET /wallet/{walletId}/transaction/{transactionId}
 GET /wallet/{walletId}/transactions
-```
 
 ---
 
@@ -47,10 +43,9 @@ GET /wallet/{walletId}/transactions
 - Deep authentication testing
 - Third-party payment or banking integration testing
 - Full performance testing
-- Full load testing
-- Multi-user isolation testing
+- Multi-user testing
 - Real 30-minute pending transaction timeout automation
-- Full concurrency/race-condition testing
+- Concurrent transaction testing
 - Exhaustive pagination testing
 
 ---
@@ -75,7 +70,6 @@ The suite is designed to be maintainable by separating test scenarios, API clien
 
 ## Framework Architecture Used for Testing
 
-```text
 ┌──────────────────────────────────────────────┐
 │                 Test Spec Layer              │
 │ cypress/e2e/wallet/walletTransaction.cy.js   │
@@ -103,13 +97,11 @@ The suite is designed to be maintainable by separating test scenarios, API clien
 │          Environment and Configuration       │
 │ .env | cypress.config.js | Cypress.env()     │
 └──────────────────────────────────────────────┘
-```
 
----
 
 ## Test Execution Flow
 
-```text
+
 ┌──────────────────────┐
 │ Cypress starts       │
 └──────────┬───────────┘
@@ -181,13 +173,9 @@ The suite is designed to be maintainable by separating test scenarios, API clien
 │ Mochawesome report   │
 │ HTML + JSON output   │
 └──────────────────────┘
-```
-
----
 
 ## Detailed Functional Flow
 
-```text
 Login
  ↓
 Validate login response schema
@@ -217,7 +205,7 @@ Validate transaction retrieval
 Validate transaction history
  ↓
 Generate Mochawesome report
-```
+
 
 ---
 
@@ -225,15 +213,15 @@ Generate Mochawesome report
 
 Test data is maintained in:
 
-```text
+
 cypress/fixtures/transactionData.json
-```
+
 
 Mock responses are maintained in:
 
-```text
+
 cypress/fixtures/mockResponses/walletApiMock.json
-```
+
 
 The test data covers:
 
@@ -497,7 +485,7 @@ Covered.
 
 ---
 
-## Important Scenarios Not Implemented
+## Scenarios Not Implemented
 
 ### Pending Transaction Finalization
 
@@ -541,15 +529,25 @@ They can be handled separately using tools such as k6 or JMeter.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Transaction remains pending | Balance assertions may fail too early | Balance is validated only for finished approved or denied transactions |
-| Shared wallet state between tests | Tests may affect each other | Small controlled transaction amounts and setup transactions are used |
-| Real API unavailable | Test execution may fail in CI | Mock mode is available using `USE_MOCKS=true` |
-| API response variability | Tests may become flaky | Assertions allow valid status/outcome variations based on API behavior |
-| Insufficient historical data | History and pagination checks may be limited | History check validates created transaction presence only |
-| Secrets exposure | Credentials may be leaked | `.env` is used locally and GitHub Secrets are recommended for CI |
+Risks and Mitigations
 
+Transaction Processing Delays
+Transactions can remain in a pending state while waiting for external services. To avoid false failures, balance validations are performed only when the transaction is completed.
+
+Shared Wallet State
+Since tests use the same wallet, previous transactions may influence results. This was handled by using small, controlled transaction amounts and setup transactions where needed.
+
+API Availability
+The challenge API may not always be available during development or CI execution. A mock mode (USE_MOCKS=true) was implemented to allow tests to run independently of the live service.
+
+Response Variability
+Transaction status and outcomes may vary depending on API processing. Assertions were designed to accept all valid response states defined in the API specification.
+
+Limited Historical Data
+Transaction history may not always contain enough data for extensive pagination checks. The implemented validation focuses on confirming that the newly created transaction appears in the history response.
+
+Secrets Management
+Credentials and sensitive configuration should not be stored in source control. Environment variables are managed through .env files locally, with GitHub Secrets recommended for CI/CD environments.
 ---
 
 ## Entry Criteria
@@ -576,39 +574,8 @@ They can be handled separately using tools such as k6 or JMeter.
 
 ---
 
-## Coverage Summary
+## Final Automated Flow / Coverage summary
 
-| Area | Status |
-| --- | --- |
-| Authentication setup | Covered |
-| User information setup | Covered |
-| Wallet ID retrieval | Covered |
-| Bearer token security validation | Covered |
-| Schema validation | Covered |
-| Assertion layer | Covered |
-| Mock mode | Covered |
-| Real API mode support | Covered |
-| Credit transactions | Covered |
-| Debit transactions | Covered |
-| Multi-currency support | Covered |
-| Decimal amount handling | Covered |
-| Wallet balance validation | Covered |
-| Transaction retrieval | Covered |
-| Transaction history | Covered |
-| Invalid payload validation | Covered |
-| Insufficient balance business rule | Covered |
-| Duplicate currency clip validation | Covered |
-| Pending transaction state validation | Partially Covered |
-| Pending transaction 30-minute timeout | Documented |
-| Concurrent transaction processing | Not Covered |
-| Pagination validation | Documented |
-| Performance testing | Out of Scope |
-
----
-
-## Final Automated Flow
-
-```text
 BEFORE
 │
 ├── Load transaction fixture data
@@ -669,9 +636,6 @@ BEFORE
 ├── Mochawesome HTML report
 ├── Mochawesome JSON report
 └── Cypress screenshot on failure
-```
-
----
 
 ## Recommended Execution Commands
 
@@ -710,12 +674,10 @@ npm run test:open
 
 ## Submission Notes
 
-The documentation and diagrams are aligned with the current framework design:
-
-- Test specs use API clients instead of direct `cy.request()` calls.
 - API clients support mock and real API execution.
 - Assertions are centralized in the assertions folder.
 - AJV schemas validate response contracts.
 - Fixtures manage reusable test data.
 - Mochawesome provides execution reports.
 - GitHub Actions supports CI execution.
+- Test specs use API clients instead of direct `cy.request()` calls.
