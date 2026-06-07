@@ -211,7 +211,6 @@ The framework uses a clean layered structure. Each layer has a separate responsi
 
 - Credit transaction
 - Debit transaction
-- Decimal amount transaction
 - Multi-currency transaction
 - Transaction retrieval
 - Transaction history verification
@@ -221,7 +220,6 @@ The framework uses a clean layered structure. Each layer has a separate responsi
 - Credit increases balance
 - Debit decreases balance
 - Negative balance prevention
-- Duplicate currency clip prevention
 - Denied transaction validation
 - Pending transaction handling
 

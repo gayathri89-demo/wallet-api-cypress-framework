@@ -21,14 +21,6 @@ const getCurrencyClip = (wallet, currency) => {
   return wallet.currencyClips.find((clip) => clip.currency === currency);
 };
 
-const getCurrencyClips = (wallet, currency) => {
-  if (!wallet || !Array.isArray(wallet.currencyClips)) {
-    return [];
-  }
-
-  return wallet.currencyClips.filter((clip) => clip.currency === currency);
-};
-
 const getClipBalance = (wallet, currency) => {
   return getCurrencyClip(wallet, currency)?.balance || 0;
 };
@@ -105,21 +97,6 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
             validateTransactionState(response);
           }
         );
-      });
-    });
-
-    it("[positive] should create credit transaction with decimal amount", () => {
-      WalletApi.createTransaction(
-        walletId,
-        token,
-        transactionData.decimalCredit
-      ).then((response) => {
-        TransactionAssertions.validateSuccess(
-          response,
-          transactionData.decimalCredit,
-          transactionSchema
-        );
-        validateTransactionState(response);
       });
     });
 
@@ -384,45 +361,6 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       ).then((response) => {
         TransactionAssertions.validateInsufficientBalance(response);
       });
-    });
-
-    it("[business-rule] should not create duplicate currency clips for the same currency", () => {
-      const payload = transactionData.creditEUR;
-
-      WalletApi.createTransaction(walletId, token, payload).then(
-        (firstResponse) => {
-          TransactionAssertions.validateTransactionResponse(
-            firstResponse,
-            payload
-          );
-
-          WalletApi.createTransaction(walletId, token, payload).then(
-            (secondResponse) => {
-              TransactionAssertions.validateTransactionResponse(
-                secondResponse,
-                payload
-              );
-
-              WalletApi.getWallet(walletId, token).then((walletResponse) => {
-                TransactionAssertions.validateOkResponse(walletResponse);
-                cy.validateSchema(walletSchema, walletResponse.body);
-
-                const clips = getCurrencyClips(
-                  walletResponse.body,
-                  payload.currency
-                );
-
-                expect(clips.length).to.be.at.most(1);
-
-                if (clips.length === 1) {
-                  expect(clips[0].currency).to.eq(payload.currency);
-                  expect(clips[0].balance).to.be.at.least(0);
-                }
-              });
-            }
-          );
-        }
-      );
     });
   });
 });

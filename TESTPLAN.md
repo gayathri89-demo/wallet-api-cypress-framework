@@ -364,26 +364,7 @@ Covered.
 
 ### P2 - Important Scenarios
 
-#### TC07 - Create credit transaction with decimal amount
-
-**Objective**  
-Validate that decimal transaction amounts are supported.
-
-**Steps**
-
-1. Submit a credit transaction with a decimal amount.
-2. Validate success response.
-3. Validate schema.
-
-**Expected Result**  
-The decimal amount transaction is accepted and processed according to API behavior.
-
-**Automation Status**  
-Covered.
-
----
-
-#### TC08 - Validate pending or finished transaction status
+#### TC07 - Validate pending or finished transaction status
 
 **Objective**  
 Verify that transaction status follows the expected API state model.
@@ -403,7 +384,7 @@ Covered.
 
 ---
 
-#### TC09 - Retrieve transaction by transaction ID
+#### TC08 - Retrieve transaction by transaction ID
 
 **Objective**  
 Verify that a created transaction can be retrieved by transaction ID.
@@ -423,7 +404,7 @@ Covered.
 
 ---
 
-#### TC10 - Verify transaction history
+#### TC09 - Verify transaction history
 
 **Objective**  
 Confirm that a created transaction appears in wallet transaction history.
@@ -443,7 +424,7 @@ Covered.
 
 ---
 
-#### TC11 - Reject invalid transaction payloads
+#### TC10 - Reject invalid transaction payloads
 
 **Objective**  
 Validate API input validation for invalid request payloads.
@@ -464,60 +445,38 @@ Covered.
 
 ---
 
-#### TC12 - Do not create duplicate currency clips for the same currency
-
-**Objective**  
-Verify that repeated transactions for the same currency reuse the existing currency clip instead of creating duplicates.
-
-**Steps**
-
-1. Create a credit transaction for a currency.
-2. Create another credit transaction for the same currency.
-3. Retrieve wallet details.
-4. Filter currency clips by currency.
-5. Validate that there is at most one clip for that currency.
-
-**Expected Result**  
-The wallet should not contain duplicate currency clips for the same currency.
-
-**Automation Status**  
-Covered.
-
----
-
 ## Scenarios Not Implemented
+### Pending transaction finalization
 
-### Pending Transaction Finalization
+Verify that a pending transaction eventually transitions to finished with a valid outcome.
 
-The API may return transactions in a `pending` state before they are finalized.
+Priority: P1
 
-This is partially handled by validating that pending is a valid state. However, the final transition from pending to finished is not fully automated because it requires either polling support, deterministic backend timing, or backend test controls.
+### Automatic rejection after 30 minutes
 
----
+Verify that a pending transaction is automatically denied after 30 minutes.
 
-### Automatic Rejection After 30 Minutes
+Priority: P1
 
-The specification describes automatic rejection after a 30-minute pending period.
+### Duplicate currency clip validation
 
-This is not automated because it would make the test suite slow and unreliable without backend time manipulation or test hooks.
+Verify that repeated transactions for the same currency do not create duplicate currency clips.
 
----
+Priority: P2
 
-### Concurrent Transaction Processing
+### Concurrent transaction processing
 
-Simultaneous debit and credit transactions are not automated.
+Verify wallet behavior when multiple debit/credit requests are submitted simultaneously.
 
-This requires a controlled concurrency setup and stable backend state to avoid flaky results.
-
----
-
-### Pagination Validation
-
-Transaction history pagination is not automated.
-
-This requires enough historical test data and stable pagination behavior in the challenge environment.
+Priority: P2
 
 ---
+
+### Transaction history pagination
+
+Verify pagination, sorting, and navigation of large transaction histories.
+
+Priority: P3
 
 ### Performance and Load Testing
 
@@ -529,25 +488,12 @@ They can be handled separately using tools such as k6 or JMeter.
 
 ## Risks and Mitigations
 
-Risks and Mitigations
-
 Transaction Processing Delays
 Transactions can remain in a pending state while waiting for external services. To avoid false failures, balance validations are performed only when the transaction is completed.
-
-Shared Wallet State
-Since tests use the same wallet, previous transactions may influence results. This was handled by using small, controlled transaction amounts and setup transactions where needed.
 
 API Availability
 The challenge API may not always be available during development or CI execution. A mock mode (USE_MOCKS=true) was implemented to allow tests to run independently of the live service.
 
-Response Variability
-Transaction status and outcomes may vary depending on API processing. Assertions were designed to accept all valid response states defined in the API specification.
-
-Limited Historical Data
-Transaction history may not always contain enough data for extensive pagination checks. The implemented validation focuses on confirming that the newly created transaction appears in the history response.
-
-Secrets Management
-Credentials and sensitive configuration should not be stored in source control. Environment variables are managed through .env files locally, with GitHub Secrets recommended for CI/CD environments.
 ---
 
 ## Entry Criteria
