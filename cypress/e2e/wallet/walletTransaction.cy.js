@@ -120,7 +120,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       const payload = transactionData.balanceCreditEUR;
 
       WalletApi.getWallet(walletId, token).then((beforeWallet) => {
-        expect(beforeWallet.status).to.eq(200);
+        TransactionAssertions.validateOkResponse(beforeWallet);
         cy.validateSchema(walletSchema, beforeWallet.body);
 
         const beforeBalance =
@@ -138,7 +138,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
               transactionResponse.body.outcome === "approved"
             ) {
               WalletApi.getWallet(walletId, token).then((afterWallet) => {
-                expect(afterWallet.status).to.eq(200);
+                TransactionAssertions.validateOkResponse(afterWallet);
                 cy.validateSchema(walletSchema, afterWallet.body);
 
                 const afterClip = getCurrencyClip(
@@ -225,7 +225,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
 
           WalletApi.getTransaction(walletId, transactionId, token).then(
             (response) => {
-              expect(response.status).to.eq(200);
+              TransactionAssertions.validateOkResponse(response);
               cy.validateSchema(transactionSchema, response.body);
 
               expect(response.body.transactionId).to.eq(transactionId);
@@ -252,7 +252,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
           const transactionId = createResponse.body.transactionId;
 
           WalletApi.getTransactions(walletId, token).then((historyResponse) => {
-            expect(historyResponse.status).to.eq(200);
+            TransactionAssertions.validateOkResponse(historyResponse);
             cy.validateSchema(transactionHistorySchema, historyResponse.body);
 
             const transactions =

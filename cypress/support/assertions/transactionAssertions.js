@@ -1,6 +1,12 @@
+import { HTTP_STATUS } from "../constants/httpStatus";
+
 export class TransactionAssertions {
   static validateSuccess(response, expectedTransaction, schema) {
-    expect(response.status).to.be.oneOf([200, 201, 202]);
+    expect(response.status).to.be.oneOf([
+      HTTP_STATUS.OK,
+      HTTP_STATUS.CREATED,
+      HTTP_STATUS.ACCEPTED,
+    ]);
 
     cy.validateSchema(schema, response.body);
 
@@ -11,22 +17,33 @@ export class TransactionAssertions {
   }
 
   static validateValidationError(response) {
-    expect(response.status).to.be.oneOf([400, 422]);
+    expect(response.status).to.be.oneOf([
+      HTTP_STATUS.BAD_REQUEST,
+      HTTP_STATUS.UNPROCESSABLE_ENTITY,
+    ]);
     expect(response.body).to.exist;
   }
 
   static validateUnauthorized(response) {
-    expect(response.status).to.eq(401);
+    expect(response.status).to.eq(HTTP_STATUS.UNAUTHORIZED);
     expect(response.body).to.exist;
   }
 
   static validateInsufficientBalance(response) {
-    expect(response.status).to.be.oneOf([400, 409, 422]);
+    expect(response.status).to.be.oneOf([
+      HTTP_STATUS.BAD_REQUEST,
+      HTTP_STATUS.CONFLICT,
+      HTTP_STATUS.UNPROCESSABLE_ENTITY,
+    ]);
     expect(response.body).to.exist;
   }
 
   static validateTransactionResponse(response, expectedPayload) {
-    expect(response.status).to.be.oneOf([200, 201, 202]);
+    expect(response.status).to.be.oneOf([
+      HTTP_STATUS.OK,
+      HTTP_STATUS.CREATED,
+      HTTP_STATUS.ACCEPTED,
+    ]);
 
     expect(response.body.transactionId).to.exist;
     expect(response.body.status).to.be.oneOf(["pending", "finished"]);
@@ -43,4 +60,8 @@ export class TransactionAssertions {
     expect(response.body.updatedAt).to.exist;
   }
 
+  static validateOkResponse(response) {
+    expect(response.status).to.eq(HTTP_STATUS.OK);
+    expect(response.body).to.exist;
+  }
 }
