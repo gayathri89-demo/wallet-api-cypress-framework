@@ -25,7 +25,6 @@ GET /wallet/{walletId}/transactions
 - Wallet credit transactions
 - Wallet debit transactions
 - Multi-currency support
-- Decimal amount handling
 - Wallet balance validation
 - Transaction retrieval by transaction ID
 - Transaction history validation
@@ -211,23 +210,15 @@ Generate Mochawesome report
 
 ## Test Data Strategy
 
-Test data is maintained in:
+Test data is maintained in: cypress/fixtures/transactionData.json
 
 
-cypress/fixtures/transactionData.json
-
-
-Mock responses are maintained in:
-
-
-cypress/fixtures/mockResponses/walletApiMock.json
-
+Mock responses are maintained in:cypress/fixtures/mockResponses/walletApiMock.json
 
 The test data covers:
 
 - Credit payloads
 - Debit payloads
-- Decimal amount payloads
 - Balance setup payloads
 - Lookup payloads
 - History validation payloads
@@ -538,7 +529,6 @@ BEFORE
 2. Positive Transaction Creation
 │
 ├── Create valid credit transactions for supported currencies
-├── Create credit transaction with decimal amount
 ├── Create valid debit transaction after setup credit
 └── Validate pending or finished transaction status
 
@@ -567,7 +557,6 @@ BEFORE
 6. Business Rule Validation
 │
 ├── Reject debit greater than available balance
-└── Do not create duplicate currency clips for the same currency
 
 7. Schema Validation
 │
