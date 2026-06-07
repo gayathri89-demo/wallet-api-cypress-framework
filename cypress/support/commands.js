@@ -8,5 +8,8 @@ Cypress.Commands.add("validateSchema", (schema, responseBody) => {
   const validate = ajv.compile(schema);
   const isValid = validate(responseBody);
 
-  expect(isValid, JSON.stringify(validate.errors, null, 2)).to.be.true;
+  expect(
+    isValid,
+    JSON.stringify(validate.errors, null, 2)
+  ).to.be.true;
 });

@@ -42,4 +42,5 @@ export class TransactionAssertions {
     expect(response.body.type).to.eq(expectedPayload.type);
     expect(response.body.updatedAt).to.exist;
   }
+
 }

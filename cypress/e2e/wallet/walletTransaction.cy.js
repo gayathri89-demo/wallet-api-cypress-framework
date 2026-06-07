@@ -1,7 +1,11 @@
 import { AuthApi } from "../../support/api/authApi";
 import { UserApi } from "../../support/api/userApi";
 import { WalletApi } from "../../support/api/walletApi";
-import { transactionSchema } from "../../schemas/walletSchemas";
+import {
+  transactionSchema,
+  walletSchema,
+  transactionHistorySchema,
+} from "../../schemas/walletSchemas";
 import {
   userTokenResponseSchema,
   userInfoSchema,
@@ -117,6 +121,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
 
       WalletApi.getWallet(walletId, token).then((beforeWallet) => {
         expect(beforeWallet.status).to.eq(200);
+        cy.validateSchema(walletSchema, beforeWallet.body);
 
         const beforeBalance =
           getCurrencyClip(beforeWallet.body, payload.currency)?.balance || 0;
@@ -134,6 +139,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
             ) {
               WalletApi.getWallet(walletId, token).then((afterWallet) => {
                 expect(afterWallet.status).to.eq(200);
+                cy.validateSchema(walletSchema, afterWallet.body);
 
                 const afterClip = getCurrencyClip(
                   afterWallet.body,
@@ -164,6 +170,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
 
           WalletApi.getWallet(walletId, token).then((beforeWallet) => {
             expect(beforeWallet.status).to.eq(200);
+            cy.validateSchema(walletSchema, beforeWallet.body);
 
             const beforeBalance =
               getCurrencyClip(beforeWallet.body, debitPayload.currency)
@@ -182,6 +189,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
                 ) {
                   WalletApi.getWallet(walletId, token).then((afterWallet) => {
                     expect(afterWallet.status).to.eq(200);
+                    cy.validateSchema(walletSchema, afterWallet.body);
 
                     const afterClip = getCurrencyClip(
                       afterWallet.body,
@@ -218,6 +226,8 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
           WalletApi.getTransaction(walletId, transactionId, token).then(
             (response) => {
               expect(response.status).to.eq(200);
+              cy.validateSchema(transactionSchema, response.body);
+
               expect(response.body.transactionId).to.eq(transactionId);
               expect(response.body.status).to.be.oneOf([
                 "pending",
@@ -243,6 +253,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
 
           WalletApi.getTransactions(walletId, token).then((historyResponse) => {
             expect(historyResponse.status).to.eq(200);
+            cy.validateSchema(transactionHistorySchema, historyResponse.body);
 
             const transactions =
               historyResponse.body.transactions || historyResponse.body;
