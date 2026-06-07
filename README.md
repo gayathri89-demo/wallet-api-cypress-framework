@@ -315,23 +315,20 @@ npm ci
 
 ## Environment Configuration
 
-Create a .env file in the project root.
+Copy `.env.example` to `.env` and update the values:
 
 BASE_URL=https://challenge.test.local/challenge/api/v1
-USERNAME=your_username
-PASSWORD=your_password
-SERVICE_ID=your_service_id
+USERNAME=test-user
+PASSWORD=test-password
+SERVICE_ID=test-service-id
+
+- For local mock execution:
+
 USE_MOCKS=true
 
-For local mock execution:
-
-USE_MOCKS=true
-
-For real API execution:
+- For real API execution:
 
 USE_MOCKS=false
-
-Sensitive values must not be committed to source control.
 
 ---
 
