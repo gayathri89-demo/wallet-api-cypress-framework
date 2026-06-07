@@ -3,7 +3,7 @@ export const transactionSchema = {
   required: ["transactionId", "status", "createdAt"],
   properties: {
     transactionId: { type: "string" },
-    currency: { type: "string", minLength: 3, maxLength: 3 },
+    currency: { type: "string" },
     amount: { type: "number" },
     type: { type: "string", enum: ["credit", "debit"] },
     status: { type: "string", enum: ["pending", "finished"] },
@@ -18,7 +18,7 @@ export const currencyClipSchema = {
   type: "object",
   required: ["currency", "balance", "lastTransaction", "transactionCount"],
   properties: {
-    currency: { type: "string", minLength: 3, maxLength: 3 },
+    currency: { type: "string" },
     balance: { type: "number", minimum: 0 },
     lastTransaction: { type: "string" },
     transactionCount: { type: "number", minimum: 0 },
