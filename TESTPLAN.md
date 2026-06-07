@@ -2,7 +2,7 @@
 
 ## Objective
 
-The objective of this test plan is to validate the core wallet transaction functionality and ensure that balances, transaction records, security controls, and business rules behave as expected.
+The objective of this test plan is to validate the core Wallet API transaction functionality and confirm that transaction processing, wallet balances, transaction records, API contracts, security behavior, and business rules work as expected.
 
 The primary endpoint under test is:
 
@@ -10,9 +10,11 @@ The primary endpoint under test is:
 POST /wallet/{walletId}/transaction
 ```
 
-Supporting endpoints are used to verify transaction outcomes:
+Supporting endpoints are used for setup and verification:
 
 ```http
+POST /user/login
+GET /user/{userId}
 GET /wallet/{walletId}
 GET /wallet/{walletId}/transaction/{transactionId}
 GET /wallet/{walletId}/transactions
@@ -24,310 +26,696 @@ GET /wallet/{walletId}/transactions
 
 ### In Scope
 
-* Credit transactions
-* Debit transactions
-* Multi-currency support
-* Decimal amount handling
-* Wallet balance validation
-* Transaction retrieval
-* Transaction history validation
-* Security validation
-* Payload validation
-* Insufficient balance handling
+- Wallet credit transactions
+- Wallet debit transactions
+- Multi-currency support
+- Decimal amount handling
+- Wallet balance validation
+- Transaction retrieval by transaction ID
+- Transaction history validation
+- Security validation for missing Bearer token
+- Payload validation
+- Business-rule validation for insufficient balance
+- Schema validation using AJV
+- Mock mode execution
+- Real API execution support
+- Mochawesome reporting
+- CI execution through GitHub Actions
 
 ### Out of Scope
 
-* Deep authentication testing
-* Third-party banking integrations
-* Performance testing
-* Load testing
-* Multi-user isolation testing
-* Real 30-minute timeout validation
+- Deep authentication testing
+- Third-party payment or banking integration testing
+- Full performance testing
+- Full load testing
+- Multi-user isolation testing
+- Real 30-minute pending transaction timeout automation
+- Full concurrency/race-condition testing
+- Exhaustive pagination testing
 
 ---
 
 ## Test Strategy
 
-The implementation focuses on high-value business scenarios rather than exhaustive combinations.
+The test strategy focuses on high-value wallet transaction scenarios rather than exhaustive payload combinations.
 
-Priority was given to:
+Priority is given to:
 
-1. Transaction processing
+1. Transaction creation correctness
 2. Wallet balance integrity
 3. Business-rule enforcement
-4. Security validation
-5. Transaction retrieval and auditability
+4. Security behavior
+5. API contract validation
+6. Transaction auditability through lookup and history endpoints
+7. Stable execution using mock mode when the real API is unavailable
+
+The suite is designed to be maintainable by separating test scenarios, API clients, assertions, schemas, and fixtures.
+
+---
+
+## Framework Architecture Used for Testing
+
+```text
+┌──────────────────────────────────────────────┐
+│                 Test Spec Layer              │
+│ cypress/e2e/wallet/walletTransaction.cy.js   │
+└───────────────────────────┬──────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────┐
+│                   API Layer                  │
+│ AuthApi | UserApi | WalletApi                │
+└───────────────────────────┬──────────────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ Assertions       │ │ AJV Schemas      │ │ Fixtures         │
+│                  │ │                  │ │                  │
+│ Status checks    │ │ Contract checks  │ │ Test data        │
+│ Body checks      │ │ Required fields  │ │ Mock responses   │
+│ Business rules   │ │ Data types       │ │ Reusable payloads│
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+              │             │             │
+              └─────────────┼─────────────┘
+                            ▼
+┌──────────────────────────────────────────────┐
+│          Environment and Configuration       │
+│ .env | cypress.config.js | Cypress.env()     │
+└──────────────────────────────────────────────┘
+```
 
 ---
 
 ## Test Execution Flow
 
 ```text
+┌──────────────────────┐
+│ Cypress starts       │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Load config and env  │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Check USE_MOCKS      │
+└───────┬────────┬─────┘
+        │        │
+        ▼        ▼
+┌────────────┐ ┌────────────┐
+│ Mock data  │ │ Real API   │
+└─────┬──────┘ └─────┬──────┘
+      │              │
+      └──────┬───────┘
+             ▼
+┌──────────────────────┐
+│ before() setup       │
+│ - Load fixtures      │
+│ - Login              │
+│ - Validate login     │
+│ - Get user info      │
+│ - Validate user info │
+│ - Store token        │
+│ - Store walletId     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Execute scenarios    │
+│ Security             │
+│ Positive flows       │
+│ Balance validation   │
+│ Retrieval            │
+│ Negative validation  │
+│ Business rules       │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ API client call      │
+│ WalletApi methods    │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Response received    │
+└───────┬────────┬─────┘
+        │        │
+        ▼        ▼
+┌────────────┐ ┌────────────┐
+│ Assertion  │ │ AJV schema │
+│ validation │ │ validation │
+└─────┬──────┘ └─────┬──────┘
+      │              │
+      └──────┬───────┘
+             ▼
+┌──────────────────────┐
+│ Business validation  │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Mochawesome report   │
+│ HTML + JSON output   │
+└──────────────────────┘
+```
+
+---
+
+## Detailed Functional Flow
+
+```text
 Login
  ↓
-Get User Information
+Validate login response schema
  ↓
-Retrieve Wallet ID
+Get user information
  ↓
-Create Transaction
+Validate user information schema
  ↓
-Validate Response
+Retrieve wallet ID
  ↓
-Validate Wallet State
+Create transaction
  ↓
-Validate Transaction History
+Validate response status
+ ↓
+Validate response body through assertion helper
+ ↓
+Validate transaction schema through AJV
+ ↓
+Check transaction state
+ ├── Pending: log and avoid premature balance assertion
+ └── Finished: validate outcome and timestamps
+ ↓
+Validate wallet state
+ ↓
+Validate transaction retrieval
+ ↓
+Validate transaction history
+ ↓
+Generate Mochawesome report
 ```
+
+---
+
+## Test Data Strategy
+
+Test data is maintained in:
+
+```text
+cypress/fixtures/transactionData.json
+```
+
+Mock responses are maintained in:
+
+```text
+cypress/fixtures/mockResponses/walletApiMock.json
+```
+
+The test data covers:
+
+- Credit payloads
+- Debit payloads
+- Decimal amount payloads
+- Balance setup payloads
+- Lookup payloads
+- History validation payloads
+- Negative payloads
+- Unsupported currency
+- Invalid transaction type
+- Large debit amount for insufficient balance validation
 
 ---
 
 ## Implemented Test Cases
 
-### P1 - Critical
+### P1 - Critical Scenarios
 
 #### TC01 - Reject transaction without Bearer token
 
-**Objective**
+**Objective**  
+Verify that unauthenticated transaction requests are rejected.
 
-Verify that unauthenticated requests are rejected.
+**Steps**
 
-**Expected Result**
+1. Call `POST /wallet/{walletId}/transaction` without a Bearer token.
+2. Send a valid transaction payload.
+3. Validate the response.
 
-API returns an unauthorized response.
+**Expected Result**  
+The API returns `401 Unauthorized` and does not process the transaction.
 
----
-
-#### TC02 - Create valid credit transactions
-
-**Objective**
-
-Verify successful credit transactions for supported currencies.
-
-**Expected Result**
-
-Transaction is created successfully and response schema is valid.
+**Automation Status**  
+Covered.
 
 ---
 
-#### TC03 - Create valid debit transaction
+#### TC02 - Create valid credit transactions for supported currencies
 
-**Objective**
+**Objective**  
+Verify that the API accepts valid credit transactions for supported currencies.
 
-Verify successful debit transactions when sufficient funds are available.
+**Steps**
 
-**Expected Result**
+1. Login and retrieve wallet ID.
+2. Submit valid credit transaction payloads.
+3. Validate success response.
+4. Validate transaction schema.
+5. Validate transaction state.
 
-Debit transaction is approved and processed successfully.
+**Expected Result**  
+The transaction is created successfully with a valid transaction ID and valid transaction state.
 
----
-
-#### TC04 - Verify balance after credit transaction
-
-**Objective**
-
-Confirm wallet balance increases after an approved credit transaction.
-
-**Expected Result**
-
-Balance increases by the credited amount.
+**Automation Status**  
+Covered.
 
 ---
 
-#### TC05 - Verify balance after debit transaction
+#### TC03 - Create a valid debit transaction
 
-**Objective**
+**Objective**  
+Verify that the API accepts a debit transaction when sufficient balance is available.
 
-Confirm wallet balance decreases after an approved debit transaction.
+**Steps**
 
-**Expected Result**
+1. Create a setup credit transaction.
+2. Submit a debit transaction for the same currency.
+3. Validate success response.
+4. Validate transaction schema.
+5. Validate transaction state.
 
-Balance decreases by the debited amount.
+**Expected Result**  
+The debit transaction is accepted and returned with a valid transaction ID.
+
+**Automation Status**  
+Covered.
+
+---
+
+#### TC04 - Verify balance after approved credit transaction
+
+**Objective**  
+Confirm that wallet balance increases after an approved credit transaction.
+
+**Steps**
+
+1. Get wallet balance before credit.
+2. Create a credit transaction.
+3. Get wallet balance after credit.
+4. If transaction is approved, compare before and after balances.
+
+**Expected Result**  
+For an approved finished transaction, wallet balance increases by the credited amount.
+
+**Automation Status**  
+Covered.
+
+---
+
+#### TC05 - Verify balance after approved debit transaction
+
+**Objective**  
+Confirm that wallet balance decreases after an approved debit transaction.
+
+**Steps**
+
+1. Create a setup credit transaction.
+2. Get wallet balance before debit.
+3. Create a debit transaction.
+4. Get wallet balance after debit.
+5. If transaction is approved, compare before and after balances.
+
+**Expected Result**  
+For an approved finished transaction, wallet balance decreases by the debited amount and remains non-negative.
+
+**Automation Status**  
+Covered.
 
 ---
 
 #### TC06 - Reject debit greater than available balance
 
-**Objective**
+**Objective**  
+Verify that the wallet does not allow debit transactions that exceed available balance.
 
-Verify wallet balances cannot become negative.
+**Steps**
 
-**Expected Result**
+1. Submit a debit transaction with an amount greater than available balance.
+2. Validate the response.
 
-API returns an insufficient balance error.
+**Expected Result**  
+The API rejects the transaction using a valid error status such as `400`, `409`, or `422`.
+
+**Automation Status**  
+Covered.
 
 ---
 
-### P2 - Important
+### P2 - Important Scenarios
 
 #### TC07 - Create credit transaction with decimal amount
 
-**Objective**
+**Objective**  
+Validate that decimal transaction amounts are supported.
 
-Validate support for decimal amounts.
+**Steps**
 
-**Expected Result**
+1. Submit a credit transaction with a decimal amount.
+2. Validate success response.
+3. Validate schema.
 
-Transaction is processed successfully.
+**Expected Result**  
+The decimal amount transaction is accepted and processed according to API behavior.
 
----
-
-#### TC08 - Retrieve transaction by transaction ID
-
-**Objective**
-
-Verify transactions can be retrieved after creation.
-
-**Expected Result**
-
-Returned transaction matches the created transaction.
+**Automation Status**  
+Covered.
 
 ---
 
-#### TC09 - Verify transaction history
+#### TC08 - Validate pending or finished transaction status
 
-**Objective**
+**Objective**  
+Verify that transaction status follows the expected API state model.
 
-Confirm newly created transactions appear in transaction history.
+**Steps**
 
-**Expected Result**
+1. Create a transaction.
+2. Validate status.
+3. If status is `pending`, do not expect final outcome.
+4. If status is `finished`, validate outcome and updated timestamp.
 
-Created transaction exists in the transaction list.
+**Expected Result**  
+Transaction status is either `pending` or `finished`. Finished transactions contain an outcome.
+
+**Automation Status**  
+Covered.
 
 ---
 
-#### TC10 - Reject invalid transaction payloads
+#### TC09 - Retrieve transaction by transaction ID
 
-**Objective**
+**Objective**  
+Verify that a created transaction can be retrieved by transaction ID.
 
-Validate API input validation.
+**Steps**
+
+1. Create a transaction.
+2. Capture `transactionId`.
+3. Call the transaction lookup endpoint.
+4. Validate returned transaction ID and schema.
+
+**Expected Result**  
+The retrieved transaction matches the created transaction ID.
+
+**Automation Status**  
+Covered.
+
+---
+
+#### TC10 - Verify transaction history
+
+**Objective**  
+Confirm that a created transaction appears in wallet transaction history.
+
+**Steps**
+
+1. Create a transaction.
+2. Capture `transactionId`.
+3. Call transaction history endpoint.
+4. Search the returned list for the created transaction ID.
+
+**Expected Result**  
+The created transaction exists in the transaction history list.
+
+**Automation Status**  
+Covered.
+
+---
+
+#### TC11 - Reject invalid transaction payloads
+
+**Objective**  
+Validate API input validation for invalid request payloads.
 
 **Scenarios Covered**
 
-* Negative amount
-* Zero amount
-* Missing amount
-* Unsupported currency
-* Invalid transaction type
+- Negative amount
+- Zero amount
+- Missing amount
+- Unsupported currency
+- Invalid transaction type
 
-**Expected Result**
+**Expected Result**  
+The API returns a validation error such as `400 Bad Request` or `422 Unprocessable Entity`.
 
-API returns validation errors.
+**Automation Status**  
+Covered.
+
+---
+
+#### TC12 - Do not create duplicate currency clips for the same currency
+
+**Objective**  
+Verify that repeated transactions for the same currency reuse the existing currency clip instead of creating duplicates.
+
+**Steps**
+
+1. Create a credit transaction for a currency.
+2. Create another credit transaction for the same currency.
+3. Retrieve wallet details.
+4. Filter currency clips by currency.
+5. Validate that there is at most one clip for that currency.
+
+**Expected Result**  
+The wallet should not contain duplicate currency clips for the same currency.
+
+**Automation Status**  
+Covered.
 
 ---
 
 ## Important Scenarios Not Implemented
 
-### Pending Transaction Processing
+### Pending Transaction Finalization
 
-The API specification describes asynchronous transaction processing where a transaction may remain in a pending state before being finalized.
+The API may return transactions in a `pending` state before they are finalized.
 
-This scenario was not fully automated because it requires controllable delayed backend responses.
+This is partially handled by validating that pending is a valid state. However, the final transition from pending to finished is not fully automated because it requires either polling support, deterministic backend timing, or backend test controls.
 
 ---
 
 ### Automatic Rejection After 30 Minutes
 
-Pending transactions should automatically be rejected after 30 minutes.
+The specification describes automatic rejection after a 30-minute pending period.
 
-This was not automated because it would significantly increase execution time and requires backend time manipulation.
+This is not automated because it would make the test suite slow and unreliable without backend time manipulation or test hooks.
 
 ---
 
 ### Concurrent Transaction Processing
 
-Simultaneous debit and credit transactions were not implemented because they require dedicated concurrency controls and stable backend state.
+Simultaneous debit and credit transactions are not automated.
+
+This requires a controlled concurrency setup and stable backend state to avoid flaky results.
 
 ---
 
 ### Pagination Validation
 
-Transaction history pagination was not implemented because the challenge environment does not provide sufficient historical transaction data.
+Transaction history pagination is not automated.
+
+This requires enough historical test data and stable pagination behavior in the challenge environment.
 
 ---
 
-## Risks
+### Performance and Load Testing
 
-| Risk                                  | Mitigation                                                  |
-| ------------------------------------- | ----------------------------------------------------------- |
-| Transaction may remain pending        | Balance validation only performed for approved transactions |
-| Shared wallet state between tests     | Controlled test setup and small transaction amounts         |
-| API environment unavailable           | Mock mode available for local execution                     |
-| External service response variability | Assertions allow valid outcomes where appropriate           |
+Performance and load testing are outside the main Cypress functional API suite.
+
+They can be handled separately using tools such as k6 or JMeter.
+
+---
+
+## Risks and Mitigations
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Transaction remains pending | Balance assertions may fail too early | Balance is validated only for finished approved or denied transactions |
+| Shared wallet state between tests | Tests may affect each other | Small controlled transaction amounts and setup transactions are used |
+| Real API unavailable | Test execution may fail in CI | Mock mode is available using `USE_MOCKS=true` |
+| API response variability | Tests may become flaky | Assertions allow valid status/outcome variations based on API behavior |
+| Insufficient historical data | History and pagination checks may be limited | History check validates created transaction presence only |
+| Secrets exposure | Credentials may be leaked | `.env` is used locally and GitHub Secrets are recommended for CI |
 
 ---
 
 ## Entry Criteria
 
-* Dependencies installed successfully
-* Environment variables configured
-* API endpoint available
-* Test account available
-* Cypress execution environment ready
+- Dependencies are installed successfully.
+- `.env` file is configured for local execution.
+- API endpoint is available for real API mode.
+- Test credentials are available for real API mode.
+- Mock fixtures are available for mock mode.
+- Cypress can start successfully.
 
 ---
 
 ## Exit Criteria
 
-* Test suite executes successfully
-* Critical transaction flows pass
-* Business rules validated
-* Reports generated successfully
-* Coverage and limitations documented
+- Wallet API suite executes successfully.
+- Critical transaction flows pass.
+- Security validation is covered.
+- Business-rule validation is covered.
+- Schema validation is covered.
+- Transaction retrieval and history checks are covered.
+- Mochawesome report is generated.
+- Coverage and limitations are documented.
 
 ---
 
 ## Coverage Summary
 
-| Area                        | Status     |
-| --------------------------- | ---------- |
-| Authentication Setup        | Covered    |
-| Credit Transactions         | Covered    |
-| Debit Transactions          | Covered    |
-| Multi-Currency Support      | Covered    |
-| Decimal Amounts             | Covered    |
-| Wallet Balance Validation   | Covered    |
-| Transaction Retrieval       | Covered    |
-| Transaction History         | Covered    |
-| Security Validation         | Covered    |
-| Business Rules              | Covered    |
-| Pending Transaction Timeout | Documented |
+| Area | Status |
+| --- | --- |
+| Authentication setup | Covered |
+| User information setup | Covered |
+| Wallet ID retrieval | Covered |
+| Bearer token security validation | Covered |
+| Schema validation | Covered |
+| Assertion layer | Covered |
+| Mock mode | Covered |
+| Real API mode support | Covered |
+| Credit transactions | Covered |
+| Debit transactions | Covered |
+| Multi-currency support | Covered |
+| Decimal amount handling | Covered |
+| Wallet balance validation | Covered |
+| Transaction retrieval | Covered |
+| Transaction history | Covered |
+| Invalid payload validation | Covered |
+| Insufficient balance business rule | Covered |
+| Duplicate currency clip validation | Covered |
+| Pending transaction state validation | Partially Covered |
+| Pending transaction 30-minute timeout | Documented |
+| Concurrent transaction processing | Not Covered |
+| Pagination validation | Documented |
+| Performance testing | Out of Scope |
 
-# Final Flow
+---
+
+## Final Automated Flow
+
+```text
 BEFORE
 │
+├── Load transaction fixture data
 ├── Login
-├── Get User Info
-└── Get Wallet ID
+├── Validate login response schema
+├── Get user info
+├── Validate user info response schema
+└── Store token and wallet ID
 
-1. Security
+1. Security Validation
 │
-└── Reject transaction without token
+└── Reject transaction without Bearer token
 
-2. Positive Transactions
+2. Positive Transaction Creation
 │
-├── Valid credit transaction (EUR/USD/AED)
-├── Decimal amount credit
-└── Valid debit transaction
+├── Create valid credit transactions for supported currencies
+├── Create credit transaction with decimal amount
+├── Create valid debit transaction after setup credit
+└── Validate pending or finished transaction status
 
-3. Wallet Balance
+3. Wallet Balance Validation
 │
-├── Credit increases balance
-└── Debit decreases balance
+├── Verify approved credit increases balance
+├── Verify denied credit does not change balance
+├── Verify approved debit decreases balance
+├── Verify denied debit does not change balance
+└── Avoid premature balance assertion for pending transaction
 
 4. Transaction Retrieval
 │
-├── Get transaction by ID
-└── Verify transaction appears in history
+├── Get transaction by transaction ID
+└── Verify created transaction appears in transaction history
 
 5. Negative Validation
 │
 └── Reject invalid payloads
-     ├── Negative amount
-     ├── Zero amount
-     ├── Missing amount
-     ├── Unsupported currency
-     └── Invalid type
+    ├── Negative amount
+    ├── Zero amount
+    ├── Missing amount
+    ├── Unsupported currency
+    └── Invalid transaction type
 
-6. Business Rules
+6. Business Rule Validation
 │
-└── Reject debit greater than balance
-Remove This Test
+├── Reject debit greater than available balance
+└── Do not create duplicate currency clips for the same currency
+
+7. Schema Validation
+│
+├── Login response schema
+├── User info response schema
+├── Wallet response schema
+├── Transaction response schema
+└── Transaction history schema
+
+8. Reporting
+│
+├── Mochawesome HTML report
+├── Mochawesome JSON report
+└── Cypress screenshot on failure
+```
+
+---
+
+## Recommended Execution Commands
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run wallet tests:
+
+```bash
+npm run test:wallet
+```
+
+Run with mock mode locally:
+
+```bash
+USE_MOCKS=true npm run test:wallet
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:USE_MOCKS="true"
+npm run test:wallet
+```
+
+Run Cypress UI:
+
+```bash
+npm run test:open
+```
+
+---
+
+## Submission Notes
+
+The documentation and diagrams are aligned with the current framework design:
+
+- Test specs use API clients instead of direct `cy.request()` calls.
+- API clients support mock and real API execution.
+- Assertions are centralized in the assertions folder.
+- AJV schemas validate response contracts.
+- Fixtures manage reusable test data.
+- Mochawesome provides execution reports.
+- GitHub Actions supports CI execution.

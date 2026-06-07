@@ -49,6 +49,18 @@ export const transactionHistorySchema = {
       type: "array",
       items: transactionSchema,
     },
+    totalCount: {
+      type: "integer",
+      minimum: 0,
+    },
+    currentPage: {
+      type: "integer",
+      minimum: 0,
+    },
+    totalPages: {
+      type: "integer",
+      minimum: 0,
+    },
   },
   additionalProperties: true,
 };
