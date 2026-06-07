@@ -465,7 +465,29 @@ Transaction outcomes may vary depending on processing time. Assertions allow all
 
 ### Secrets Management
 
-Credentials and configuration values are managed through environment variables and should never be committed to source control.
+GitHub Actions
+
+For CI/CD execution, sensitive values should be stored as GitHub Repository Secrets rather than hardcoded in workflow files.
+
+Required secrets:
+
+- Secret Name	& Description
+BASE_URL	Wallet API base URL
+USERNAME	API username
+PASSWORD	API password
+SERVICE_ID	X-Service-Id header value
+
+Secrets can be configured under:
+
+GitHub Repository → Settings → Secrets and Variables → Actions
+
+Example workflow usage:
+
+env:
+  BASE_URL: ${{ secrets.BASE_URL }}
+  USERNAME: ${{ secrets.USERNAME }}
+  PASSWORD: ${{ secrets.PASSWORD }}
+  SERVICE_ID: ${{ secrets.SERVICE_ID }}
 
 ---
 
