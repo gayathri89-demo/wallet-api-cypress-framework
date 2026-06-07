@@ -249,73 +249,220 @@ The framework uses a clean layered structure. Each layer has a separate responsi
 
 ## Mock Mode and Real API Mode
 
-[preserve your existing section]
+The framework supports two execution modes.
+
+Mock Mode
+
+Use mock mode when the real API is unavailable or when running in CI.
+
+USE_MOCKS=true
+
+In mock mode:
+
+API classes return controlled fixture-based responses.
+
+Wallet mock state is updated in memory.
+
+Balance tests can verify credit and debit behavior.
+
+CI execution is stable and independent of the real environment.
+
+Real API Mode
+
+Use real API mode when testing against the actual challenge API.
+
+USE_MOCKS=false
+
+In real API mode:
+
+API classes call the real endpoints.
+
+The framework uses BASE_URL, USERNAME, PASSWORD, and SERVICE_ID from .env.
+
+Tests validate actual API behavior.
 
 ---
 
 ## Prerequisites
 
-[preserve existing section]
+Node.js 18 or higher
+
+npm
+
+Access to the challenge API, if running in real API mode
+
+Valid credentials, if running in real API mode
+
+Check versions:
+
+node -v
+npm -v
 
 ---
 
 ## Installation
 
-[preserve existing section]
+Install dependencies:
+
+npm install
+
+For CI environments, use:
+
+npm ci
+
 
 ---
 
 ## Environment Configuration
 
-[preserve existing section]
+Create a .env file in the project root.
+
+BASE_URL=https://challenge.test.local/challenge/api/v1
+USERNAME=your_username
+PASSWORD=your_password
+SERVICE_ID=your_service_id
+USE_MOCKS=true
+
+For local mock execution:
+
+USE_MOCKS=true
+
+For real API execution:
+
+USE_MOCKS=false
+
+Sensitive values must not be committed to source control.
 
 ---
 
 ## Running Tests
 
-[preserve existing section]
+Run the wallet API suite:
+
+npm run test:wallet
+
+Run all Cypress tests:
+
+npm test
+
+Run Cypress in interactive mode:
+
+npm run test:open
+
+Run the spec directly:
+
+npx cypress run --spec cypress/e2e/wallet/walletTransaction.cy.js
 
 ---
 
 ## Reporting
 
-[preserve existing section]
+Mochawesome reports are generated after test execution.
+
+Report location:
+
+reports/mochawesome
+
+The report includes:
+
+ - Test execution summary
+ - Passed and failed test cases
+ - Error details for failed tests
+ - HTML report
+ - JSON report
+
+Cypress screenshots are enabled for test failures.
 
 ---
 
 ## CI/CD Execution
 
-[preserve existing section]
+The project includes a GitHub Actions workflow: 
+
+.github/workflows/api-test.yml
+
+The workflow:
+    1. Checks out the repository.
+    2. Sets up Node.js.
+    3. Installs dependencies using npm ci.
+    4. Runs the wallet API test suite.
+    5. Uploads Mochawesome reports as artifacts.
+
+For CI stability, the workflow is configured to use mock mode:
+
+USE_MOCKS=true
+
+Required secrets for real API execution:
+
+BASE_URL
+USERNAME
+PASSWORD
+SERVICE_ID
 
 ---
 
 ## Key Files and Responsibilities
 
-[preserve existing table]
+cypress/e2e/wallet/walletTransaction.cy.js - Main wallet transaction test scenarios
+
+cypress/support/api/authApi.js - Login API wrapper
+
+cypress/support/api/userApi.js - User information API wrapper
+
+cypress/support/api/walletApi.js - Wallet API wrapper for wallet, transaction, and history endpoints
+
+cypress/support/assertions/transactionAssertions.js - Reusable transaction and response assertions
+
+cypress/support/assertions/userAssertions.js - Reusable login and user assertions
+
+cypress/schemas/userSchemas.js - Login and user response schemas
+
+cypress/schemas/walletSchemas.js - Wallet and transaction response schemas
+
+cypress/fixtures/transactionData.json - Positive and negative transaction payloads
+
+cypress/fixtures/mockResponses/walletApiMock.json - Mock API responses
+
+cypress/support/constants/httpStatus.js - HTTP status constants
+
+cypress.config.js - Cypress configuration, environment mapping, reporter setup
+
+.github/workflows/api-test.yml - CI workflow
 
 ---
 
 ## Assumptions
 
-[preserve existing section]
+1. Authentication is used as setup and is not deeply tested.
+2. A valid user has an associated wallet ID.
+3. A wallet may contain multiple currency clips.
+4. Currency values follow ISO 4217 style three-letter currency codes.
+5. A new currency clip may be created after the first successful credit for a currency.
+6. Wallet balances must never become negative.
+7. Debit transactions should be rejected or denied when the balance is insufficient.
+8. A transaction may be returned as pending or finished.
+9. Balance validation is performed only when a transaction is finished.
+10. If a transaction is pending, the test logs the state instead of failing the balance check immediately.
+11. Pending transaction timeout after 30 minutes is documented but not automated because it requires time control or delayed backend processing.
+
 
 ---
 
 ## Risks and Mitigations
 
-### Transaction Processing Delays
+1.  Transaction Processing Delays
 
 Transactions may remain in a pending state while waiting for external services. Balance validations are performed only after the transaction reaches a final state.
 
-### Shared Wallet State
+2.  Shared Wallet State
 
 Previous transactions may influence wallet balances and transaction history. Controlled transaction amounts and setup data are used to reduce test dependencies.
 
-### API Availability
+3. API Availability
 
 The challenge API was not always accessible during development. Mock mode was implemented to allow local and CI execution without relying on the live environment.
 
-### Response Variability
+4.  Response Variability
 
 Transaction outcomes may vary depending on processing time. Assertions allow all valid documented response states.
 
@@ -343,7 +490,6 @@ Supporting endpoints are used to establish test preconditions and validate trans
 
 ---
 
-## LLM Disclosure
 
 ## LLM Disclosure
 
@@ -352,6 +498,8 @@ AI-assisted tools were used during development as productivity and review aids. 
 ### Tools Used
 
 GitHub Copilot - GPT-5 mini - Used inside Visual Studio Code for code completion, refactoring suggestions, repetitive boilerplate generation, and minor documentation assistance. 
+
+GitHub Copilot Chat - Enables use of copilot-debug and copilot commands in the terminal
 
 ChatGPT - GPT-5.5 - Used for code review, framework structure review, documentation support, schema validation discussions, README/TESTPLAN refinement, and architecture explanation. 
 
