@@ -20,8 +20,13 @@ const getCurrencyClip = (wallet, currency) => {
 describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
   let token;
   let walletId;
+  let transactionData;
 
   before(() => {
+    cy.fixture("transactionData").then((data) => {
+      transactionData = data;
+    });
+
     const credentials = {
       username: Cypress.env("username"),
       password: Cypress.env("password"),
@@ -39,51 +44,31 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
         return UserApi.getUserInfo(loginResponse.body.userId, token);
       })
       .then((userResponse) => {
-        UserAssertions.validateUserInfoResponse(
-          userResponse,
-          userInfoSchema
-        );
-
+        UserAssertions.validateUserInfoResponse(userResponse, userInfoSchema);
         walletId = userResponse.body.walletId;
       });
   });
 
-  context("1. Security validation", () => {
+  context("Security validation", () => {
     it("[security] should reject transaction without bearer token", () => {
-      cy.fixture("transactionData").then((data) => {
-        WalletApi.createTransaction(walletId, null, data.creditEUR).then(
-          (response) => {
-            TransactionAssertions.validateUnauthorized(response);
-          }
-        );
+      WalletApi.createTransaction(
+        walletId,
+        null,
+        transactionData.creditEUR
+      ).then((response) => {
+        TransactionAssertions.validateUnauthorized(response);
       });
     });
   });
 
-  context("2. Positive transaction creation", () => {
+  context("Positive transaction creation", () => {
     it("[positive] should create valid credit transactions for supported currencies", () => {
-      cy.fixture("transactionData").then((data) => {
-        data.supportedCurrencies.forEach((transaction) => {
-          WalletApi.createTransaction(walletId, token, transaction).then(
-            (response) => {
-              TransactionAssertions.validateSuccess(
-                response,
-                transaction,
-                transactionSchema
-              );
-            }
-          );
-        });
-      });
-    });
-
-    it("[positive] should create credit transaction with decimal amount", () => {
-      cy.fixture("transactionData").then((data) => {
-        WalletApi.createTransaction(walletId, token, data.decimalCredit).then(
+      transactionData.supportedCurrencies.forEach((transaction) => {
+        WalletApi.createTransaction(walletId, token, transaction).then(
           (response) => {
             TransactionAssertions.validateSuccess(
               response,
-              data.decimalCredit,
+              transaction,
               transactionSchema
             );
           }
@@ -91,30 +76,44 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
       });
     });
 
+    it("[positive] should create credit transaction with decimal amount", () => {
+      WalletApi.createTransaction(
+        walletId,
+        token,
+        transactionData.decimalCredit
+      ).then((response) => {
+        TransactionAssertions.validateSuccess(
+          response,
+          transactionData.decimalCredit,
+          transactionSchema
+        );
+      });
+    });
+
     it("[positive] should create a valid debit transaction", () => {
-      cy.fixture("transactionData").then((data) => {
-        WalletApi.createTransaction(walletId, token, data.creditEUR).then(() => {
-          WalletApi.createTransaction(walletId, token, data.debitEUR).then(
-            (response) => {
-              TransactionAssertions.validateSuccess(
-                response,
-                data.debitEUR,
-                transactionSchema
-              );
-            }
+      WalletApi.createTransaction(
+        walletId,
+        token,
+        transactionData.creditEUR
+      ).then(() => {
+        WalletApi.createTransaction(
+          walletId,
+          token,
+          transactionData.debitEUR
+        ).then((response) => {
+          TransactionAssertions.validateSuccess(
+            response,
+            transactionData.debitEUR,
+            transactionSchema
           );
         });
       });
     });
   });
 
-  context("3. Wallet balance validation", () => {
+  context("Wallet balance validation", () => {
     it("[business] should increase balance after approved credit transaction", () => {
-      const payload = {
-        currency: "EUR",
-        amount: 50,
-        type: "credit",
-      };
+      const payload = transactionData.balanceCreditEUR;
 
       WalletApi.getWallet(walletId, token).then((beforeWallet) => {
         expect(beforeWallet.status).to.eq(200);
@@ -153,17 +152,8 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
     });
 
     it("[business] should decrease balance after approved debit transaction", () => {
-      const creditPayload = {
-        currency: "EUR",
-        amount: 100,
-        type: "credit",
-      };
-
-      const debitPayload = {
-        currency: "EUR",
-        amount: 20,
-        type: "debit",
-      };
+      const creditPayload = transactionData.balanceSetupCreditEUR;
+      const debitPayload = transactionData.balanceDebitEUR;
 
       WalletApi.createTransaction(walletId, token, creditPayload).then(
         (creditResponse) => {
@@ -212,13 +202,9 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
     });
   });
 
-  context("4. Transaction retrieval", () => {
+  context("Transaction retrieval", () => {
     it("[positive] should retrieve transaction by transaction ID", () => {
-      const payload = {
-        currency: "USD",
-        amount: 25,
-        type: "credit",
-      };
+      const payload = transactionData.lookupCreditUSD;
 
       WalletApi.createTransaction(walletId, token, payload).then(
         (createResponse) => {
@@ -244,11 +230,7 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
     });
 
     it("[positive] should include created transaction in transaction history", () => {
-      const payload = {
-        currency: "AED",
-        amount: 40,
-        type: "credit",
-      };
+      const payload = transactionData.historyCreditAED;
 
       WalletApi.createTransaction(walletId, token, payload).then(
         (createResponse) => {
@@ -276,36 +258,34 @@ describe("Wallet Transaction API - POST /wallet/{walletId}/transaction", () => {
     });
   });
 
-  context("5. Negative validation", () => {
+  context("Negative validation", () => {
     it("[negative] should reject invalid transaction payloads", () => {
-      cy.fixture("transactionData").then((data) => {
-        const invalidPayloads = [
-          data.negativeAmount,
-          data.zeroAmount,
-          data.missingAmount,
-          data.unsupportedCurrency,
-          data.invalidType,
-        ];
+      const invalidPayloads = [
+        transactionData.negativeAmount,
+        transactionData.zeroAmount,
+        transactionData.missingAmount,
+        transactionData.unsupportedCurrency,
+        transactionData.invalidType,
+      ];
 
-        invalidPayloads.forEach((payload) => {
-          WalletApi.createTransaction(walletId, token, payload).then(
-            (response) => {
-              TransactionAssertions.validateValidationError(response);
-            }
-          );
-        });
+      invalidPayloads.forEach((payload) => {
+        WalletApi.createTransaction(walletId, token, payload).then(
+          (response) => {
+            TransactionAssertions.validateValidationError(response);
+          }
+        );
       });
     });
   });
 
-  context("6. Business rule validation", () => {
+  context("Business rule validation", () => {
     it("[business-rule] should reject debit greater than available balance", () => {
-      cy.fixture("transactionData").then((data) => {
-        WalletApi.createTransaction(walletId, token, data.largeDebitEUR).then(
-          (response) => {
-            TransactionAssertions.validateInsufficientBalance(response);
-          }
-        );
+      WalletApi.createTransaction(
+        walletId,
+        token,
+        transactionData.largeDebitEUR
+      ).then((response) => {
+        TransactionAssertions.validateInsufficientBalance(response);
       });
     });
   });

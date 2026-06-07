@@ -197,6 +197,15 @@ Sensitive values should never be committed to source control.
 
 ## LLM Disclosure
 
-ChatGPT (GPT-5.5) was used for code review assistance, documentation support, and test design discussions.
+ChatGPT (GPT-5.5) was used as an engineering assistant for code review, documentation support and guidance on mocking strategies.
 
-All implementation details, assumptions, and test coverage decisions were reviewed and validated before submission.
+GitHub Copilot integrated with Visual Studio Code to accelerate the code development(not paid, it was already integrated before)
+
+I also use prompt-based interactions to ask targeted questions such as:
+
+- "What test scenarios am I missing?"
+- "How would you improve this framework architecture?"
+- "Does this implementation satisfy the challenge requirements?"
+- "What risks or edge cases should be considered?"
+
+I use AI as a quality and productivity tool.

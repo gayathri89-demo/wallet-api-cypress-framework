@@ -60,4 +60,34 @@
       "type": "credit"
     }
   ]
+,
+  "balanceCreditEUR": {
+    "currency": "EUR",
+    "amount": 50,
+    "type": "credit"
+  },
+
+  "balanceSetupCreditEUR": {
+    "currency": "EUR",
+    "amount": 100,
+    "type": "credit"
+  },
+
+  "balanceDebitEUR": {
+    "currency": "EUR",
+    "amount": 20,
+    "type": "debit"
+  },
+
+  "lookupCreditUSD": {
+    "currency": "USD",
+    "amount": 25,
+    "type": "credit"
+  },
+
+  "historyCreditAED": {
+    "currency": "AED",
+    "amount": 40,
+    "type": "credit"
+  }
 }
